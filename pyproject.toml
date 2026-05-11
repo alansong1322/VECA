@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "veca"
+version = "0.1.0"
+description = "Object365 VECA nested distillation and finetuning"
+requires-python = ">=3.10"
+dependencies = [
+  "torch",
+  "torchvision",
+  "timm",
+  "transformers",
+  "numpy",
+  "tqdm",
+  "wandb",
+  "dion"
+]
+
+[tool.setuptools.packages.find]
+include = ["veca*"]
