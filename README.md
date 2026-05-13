@@ -4,6 +4,8 @@ Official research code for **VECA** (**V**isual **E**lastic **C**ore
 **A**ttention), a linear-time vision backbone that replaces dense
 patch-to-patch self-attention with core-periphery attention.
 
+[Paper](https://arxiv.org/abs/2605.12491) (arXiv:2605.12491) | Submitted May 12, 2026
+
 VECA maintains dense, spatially aligned patch tokens throughout the network,
 but routes global communication through a small set of learned **core tokens**.
 For `N` image patches and `C` active cores, the attention connectivity is
@@ -284,13 +286,25 @@ std  = (0.229, 0.224, 0.225)
 
 ## Citation
 
-Citation metadata will be added here.
+If you use this repository, please cite:
 
 ```bibtex
-@misc{veca2026,
+@misc{song2026elastic,
   title  = {Elastic Attention Cores for Scalable Vision Transformers},
-  author = {VECA Authors},
+  author = {Alan Z. Song and
+            Yinjie Chen and
+            Mu Nan and
+            Rui Zhang and
+            Jiahang Cao and
+            Weijian Mai and
+            Muquan Yu and
+            Hossein Adeli and
+            Deva Ramanan and
+            Michael J. Tarr and
+            Andrew F. Luo},
   year   = {2026},
-  note   = {Placeholder citation}
+  eprint = {2605.12491},
+  archivePrefix = {arXiv},
+  url    = {https://arxiv.org/abs/2605.12491}
 }
 ```
