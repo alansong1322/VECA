@@ -1,18 +1,22 @@
-# Elastic Attention Cores for Scalable Vision Transformers
+# Do Vision Transformers Need All-to-All Attention?
 
-Official research code for **VECA** (**V**isual **E**lastic **C**ore
-**A**ttention), a linear-time vision backbone that replaces dense
-patch-to-patch self-attention with core-periphery attention.
+## Global Communication Through Elastic Learned Cores
 
-[Paper](https://arxiv.org/abs/2605.12491) (arXiv:2605.12491) | Submitted May 12, 2026
+Official research code for **VECA** (**V**isual **E**lastic-**C**ore
+**A**ttention), a vision transformer that tests whether effective visual
+representations require direct all-to-all interaction between image patches.
 
-VECA maintains dense, spatially aligned patch tokens throughout the network,
-but routes global communication through a small set of learned **core tokens**.
-For `N` image patches and `C` active cores, the attention connectivity is
-`2NC + C^2` instead of the quadratic `N^2` patch-to-patch cost of standard
-Vision Transformers. The same trained model can also run with different active
-core budgets, enabling an elastic trade-off between compute and representation
-quality at inference time.
+[Paper](https://arxiv.org/abs/2605.12491) | arXiv:2605.12491
+
+VECA removes direct patch-to-patch attention and routes global communication
+through a small set of learned **core tokens**. Crucially, it does not compress
+the image into a latent bottleneck: the full set of dense, spatially aligned
+patch tokens is preserved and updated in every layer. For `N` image patches and
+`C` active cores, VECA uses `2NC + C^2` attention interactions instead of the
+quadratic `N^2` patch-to-patch interactions of a standard Vision Transformer.
+For fixed `C`, attention therefore scales linearly with image size. A single
+nested-trained model can also vary `C` at inference time, providing an elastic
+compute-accuracy trade-off without retraining.
 
 ## Figures
 
@@ -27,34 +31,50 @@ quality at inference time.
 ## Abstract
 
 Vision Transformers (ViTs) achieve strong data-driven scaling by leveraging
-all-to-all self-attention. However, this flexibility incurs a computational
-cost that scales quadratically with image resolution, limiting ViTs in
-high-resolution domains. VECA challenges the assumption that direct
-patch-to-patch interactions are necessary for learning rich visual-semantic
-representations. Instead, VECA uses efficient linear-time core-periphery
-attention mediated by a small set of learned cores. Patches exchange information
-exclusively through these core tokens, which are initialized from scratch and
-propagated across layers. Because the `N` image patches directly interact only
-with a resolution-invariant set of `C` learned cores, VECA scales linearly in
-the number of patches for fixed `C`.
+all-to-all self-attention among patch tokens. This design implicitly assumes
+that direct pairwise patch interactions are necessary for effective
+representation learning, while incurring quadratic cost as image resolution
+increases. VECA challenges that assumption. It uses core-periphery structured
+attention mediated by a small, resolution-invariant set of learned cores:
+patches exchange global information exclusively through the cores, while every
+dense patch token is preserved and iteratively updated across layers. This
+reduces attention complexity from `O(N^2)` to `O(N)` for a fixed core budget.
 
-Unlike prior cross-attention architectures that compress the image into a small
-latent bottleneck, VECA maintains and updates the full set of `N` patch tokens.
-Combined with nested training along the core axis, a single VECA model can
-elastically trade off compute and accuracy at inference time.
+Unlike latent-token cross-attention architectures, VECA enables sparse global
+communication without compressing the spatial representation itself. Nested
+training along the core axis lets one model elastically trade computation for
+accuracy at inference time. When distilled from a frozen DINOv3 teacher, VECA
+learns representations that support both global recognition and dense
+prediction, remains competitive with full-attention backbones, and outperforms
+the evaluated linear-complexity alternatives on most benchmarks. Without
+explicit semantic supervision, its cores also develop organized object- and
+part-level roles that support label transfer across video frames.
 
 ## Contributions
 
-- **Core-periphery visual attention.** We propose VECA, a visual backbone that
-  replaces quadratic patch self-attention with linear-time core-periphery
-  attention in every layer, routing token communication through a
-  resolution-invariant set of learned cores.
-- **Competitive classification and dense representations.** We evaluate VECA on
-  classification and dense spatial tasks, where it remains competitive with a
-  DINOv3 teacher while substantially reducing attention interactions.
-- **Elastic and interpretable cores.** We analyze the learned core tokens,
-  showing emergent isotropic-to-semantic attention behavior, object-centric
-  representations, and controllable compute through nested active-core budgets.
+- **Sparse global communication without spatial compression.** VECA removes
+  direct patch-to-patch interaction while preserving and continually updating
+  the full dense patch representation through a learned core-periphery
+  communication graph.
+- **Elastic computation from one model.** Nested training over ordered core
+  prefixes allows the active budget to change at inference time, smoothly
+  trading computation for accuracy without retraining.
+- **Emergent semantic core structure.** Repeated interaction with the dense
+  patch stream produces semantically organized cores without explicit
+  supervision; these compact representations support object-label transfer
+  across frames.
+
+## Selected Findings
+
+- In frozen-backbone evaluation, VECA-B/16 leads the evaluated
+  linear-complexity architectures on six of seven classification, segmentation,
+  and depth benchmarks while remaining close to the full-attention ViT-B/16.
+- At `512 x 512` resolution, VECA-B/16 with `C = 8` retains `95.7%` of the
+  full-attention ViT-B/16's PASCAL VOC performance while using only `1.6%` as
+  many attention interactions.
+- On DAVIS-2017 label propagation, 64 learned cores provide a `25.3x` token
+  compression and retain `81.0%` of dense-patch `J&F`, outperforming equally
+  sized uniform-sampling and k-means references.
 
 ## Method Overview
 
@@ -76,10 +96,12 @@ Z' = Attn(Z,   R_C,      R_C)
 ```
 
 The cores form a fully connected communication interface, while patch tokens
-retain a dense per-patch representation. VECA also assigns each core a learned
-2D coordinate used by RoPE. Core coordinates evolve across layers through a
-small coordinate prediction head, allowing cores to develop spatially and
-semantically meaningful behavior.
+retain a dense per-patch representation. The resulting attention graph has
+diameter 2: information from one patch can influence another through a core in
+two blocks. VECA also assigns each core a learned 2D coordinate used by RoPE.
+Core coordinates evolve across layers through a small coordinate prediction
+head, allowing cores to develop spatially and semantically meaningful behavior.
+The first active core serves as the global (`[CLS]`) representation.
 
 ## Repository Layout
 
@@ -289,16 +311,12 @@ std  = (0.229, 0.224, 0.225)
 If you use this repository, please cite:
 
 ```bibtex
-@misc{song2026elastic,
-  title  = {Elastic Attention Cores for Scalable Vision Transformers},
+@misc{song2026vision,
+  title  = {Do Vision Transformers Need All-to-All Attention? Global
+            Communication Through Elastic Learned Cores},
   author = {Alan Z. Song and
             Yinjie Chen and
             Mu Nan and
-            Rui Zhang and
-            Jiahang Cao and
-            Weijian Mai and
-            Muquan Yu and
-            Hossein Adeli and
             Deva Ramanan and
             Michael J. Tarr and
             Andrew F. Luo},
