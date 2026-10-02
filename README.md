@@ -6,7 +6,7 @@ Official research code for **VECA** (**V**isual **E**lastic-**C**ore
 **A**ttention), a vision transformer that tests whether effective visual
 representations require direct all-to-all interaction between image patches.
 
-[Paper](https://arxiv.org/abs/2605.12491) | arXiv:2605.12491
+[Paper](https://arxiv.org/abs/2605.12491v2) | arXiv:2605.12491v2
 
 VECA removes direct patch-to-patch attention and routes global communication
 through a small set of learned **core tokens**. Crucially, it does not compress
@@ -323,6 +323,6 @@ If you use this repository, please cite:
   year   = {2026},
   eprint = {2605.12491},
   archivePrefix = {arXiv},
-  url    = {https://arxiv.org/abs/2605.12491}
+  url    = {https://arxiv.org/abs/2605.12491v2}
 }
 ```
